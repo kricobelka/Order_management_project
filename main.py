@@ -151,7 +151,7 @@ if __name__ == "__main__":
         host = "localhost",
         port =  5432,
         user = "postgres",
-        password = "9154"
+        password = ""
 
     ) as connection:
         print("Connected!")
