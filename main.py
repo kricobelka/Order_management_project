@@ -158,21 +158,21 @@ if __name__ == "__main__":
 
         with connection.cursor() as cursor:
                 
-                # customers = get_customers(cursor)
+                customers = get_customers(cursor)
 
-                # for customer_id, customer_name, email in customers:
-                #     print(f"{customer_id} | {customer_name} | {email}")
+                for customer_id, customer_name, email in customers:
+                    print(f"{customer_id} | {customer_name} | {email}")
 
-                # products = get_products(cursor)
+                products = get_products(cursor)
 
-                # for id, name, price, stock in products:
-                #         print(f"{id} | {name} | {price} | {stock}")
-                # # если айди не нужно показывать клиенту, мы его можем не печатть(убратб из принта)
+                for id, name, price, stock in products:
+                        print(f"{id} | {name} | {price} | {stock}")
+                # если айди не нужно показывать клиенту, мы его можем не печатть(убратб из принта)
 
-                # customer_id = int(input("Please insert customer id whose orders must be received: "))
-                # customer_orders = get_customer_orders(cursor, customer_id)
+                customer_id = int(input("Please insert customer id whose orders must be received: "))
+                customer_orders = get_customer_orders(cursor, customer_id)
 
-                # print(customer_orders)
+                print(customer_orders)
                 
 
                 customer_id = int(input("Please provide customer id to which order shall be added: "))
