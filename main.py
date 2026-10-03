@@ -1,4 +1,5 @@
 import psycopg
+import os
 
 print(psycopg.__version__)
 
@@ -147,11 +148,11 @@ if __name__ == "__main__":
 
     with psycopg.connect(
 
-        dbname = "sql_learning",
-        host = "localhost",
-        port =  5432,
-        user = "postgres",
-        password = ""
+        dbname = os.getenv("DB_NAME"),
+        host = os.getenv("DB_HOST"),
+        port = os.getenv("DB_PORT"),
+        user = os.getenv("DB_USER"),
+        password = os.getenv("DB_PASSWORD")
 
     ) as connection:
         print("Connected!")
