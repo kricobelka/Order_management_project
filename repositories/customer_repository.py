@@ -1,28 +1,43 @@
-import psycopg
 
-def get_customers(cursor):
+class CustomerRepository:
+    def __init__(self, cursor):
+        self.cursor = cursor
 
-    cursor.execute("""
-                SELECT id, name, email
-                FROM customers
-                ORDER BY id;
-            """)
+        
+    def get_customers(self):
+
+        self.cursor.execute("""
+                                        SELECT id, name, email, role
+                                        FROM customers
+                                        ORDER BY id;
+                    """)
+                            
+        customers = self.cursor.fetchall()
+
+        return customers
     
-    customers = cursor.fetchall()
+    def get_customer(self, customer_email):
+        
+        self.cursor.execute("""SELECT * FROM customers
+                            WHERE customers.email = %s;
+                            """, (customer_email, ))
+        
+        customer = self.cursor.fetchone()
+        return customer
+    
+    def get_my_orders(self, customer_id):
+        
+        self.cursor.execute("""SELECT orders_new.id, 
+                                SUM(products.price * order_items.quantity) AS total_sum
+                            FROM orders_new
+                                JOIN customers ON orders_new.customer_id = customers.id
+                                JOIN order_items ON orders_new.id = order_items.order_id
+                                JOIN products ON products.id = order_items.product_id
+                            WHERE customers.id = %s
+                            GROUP BY orders_new.id;
+                            """, (customer_id, ))
+        orders = self.cursor.fetchall()
+        return orders
 
-    return customers
 
-
-def get_customer_orders(cursor, customer_id):
-
-    cursor.execute("""
-                    SELECT orders_new.id, customers.name
-                    FROM orders_new
-                    JOIN customers ON customers.id = orders_new.customer_id
-                    WHERE customers.id = %s;
-                    """,
-                    (customer_id,))
-
-    customer_orders = cursor.fetchall()
-     
-    return customer_orders
+    
