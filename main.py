@@ -117,37 +117,38 @@ if __name__ == "__main__":
                                             print(f"Product: {product_id}, q-ty:  {quantity} added to order {order_id}")
                                         except ValueError as e:
                                             print(e)
-                                            continue
-                                        
-                                        answer = input("Do you want to add another product? yes/no")
-                                        if answer == "no":
-                                            break
+                                        else:
+                                            answer = input("Do you want to add another product? yes/no")
+                                            if answer == "no":
+                                                break
                             else:
                                 print ("Access denied")
                             
                     elif message == "6":
                             if custom_user is not None and custom_user.role() == "user":
-                                orders = customer_repository_object.get_my_orders(custom_user.user_id)
-                                for order_id, total_sum in orders:
-                                    print(f"Order id: {order_id}, total_sum: {total_sum}")
-                                
-                                try:
-                                    order_id = int(input("Id of the required order: "))
-                                except ValueError:
-                                    print("Order id must be a number")
-                                    continue
+                                while True:
+                                    orders = customer_repository_object.get_my_orders(custom_user.user_id)
+                                    for order_id, total_sum in orders:
+                                        print(f"Order id: {order_id}, total_sum: {total_sum}")
                                     
-                                if any(order[0] == order_id for order in orders):
-                                        order = order_repository_object.get_full_order_information(order_id)
-                                        
-                                        for order_id, product_name, product_price, quantity, item_total_price in order:
-                                            print(f"Product name: {product_name}\n"
-                                            f"Price: {product_price}\n"
-                                            f"Quantity: {quantity}\n"
-                                            f"Total price: {item_total_price}")
-                                else:
-                                    print("Access denied")
-                                
+                                    try:
+                                        order_id = int(input("Id of the required order: "))
+                                    except ValueError:
+                                        print("Order id must be a number")
+                                        continue
+                                    
+                                    if any(order[0] == order_id for order in orders):
+                                            order = order_repository_object.get_full_order_information(order_id)
+                                            
+                                            for order_id, product_name, product_price, quantity, item_total_price in order:
+                                                print(f"Product name: {product_name}\n"
+                                                f"Price: {product_price}\n"
+                                                f"Quantity: {quantity}\n"
+                                                f"Total price: {item_total_price}")
+                                            break
+                                    else:
+                                        print("Access denied")
+                                    
                             else:
                                 print ("Access Error")
                             
