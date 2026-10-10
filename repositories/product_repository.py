@@ -1,4 +1,4 @@
-
+from product import Product
 
 class ProductRepository:
     
@@ -14,8 +14,26 @@ class ProductRepository:
         """)
 
         products = self.cursor.fetchall()
+        products_result = []
 
-        return products
+        for product in products:
+            products_result.append(Product.from_db_tuple(product))
+             
+        return products_result
+
+    def get_product_by_id(self, product):
+
+        self.cursor.execute("""SELECT id, name, price, stock 
+                                FROM products 
+                                WHERE id = %s;
+                                """, (product.product_id, ))
+        
+        product_result = self.cursor.fetchone()
+
+        if product_result is None:
+            raise ValueError("Product is not found")
+
+        return Product.from_db_tuple(product_result)     
     
     def get_all_product_orders(self):
     
@@ -28,5 +46,8 @@ class ProductRepository:
                             GROUP BY products.id, products.name;""")
     
             all_product_orders = self.cursor.fetchall()
-                                
             return all_product_orders
+ 
+
+
+         

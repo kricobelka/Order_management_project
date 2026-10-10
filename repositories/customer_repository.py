@@ -1,4 +1,4 @@
-
+from customer_orders import CustomerOrders
 class CustomerRepository:
     def __init__(self, cursor):
         self.cursor = cursor
@@ -18,7 +18,7 @@ class CustomerRepository:
     
     def get_customer(self, customer_email):
         
-        self.cursor.execute("""SELECT * FROM customers
+        self.cursor.execute("""SELECT id, name, email, role FROM customers
                             WHERE customers.email = %s;
                             """, (customer_email, ))
         
@@ -36,8 +36,13 @@ class CustomerRepository:
                             WHERE customers.id = %s
                             GROUP BY orders_new.id;
                             """, (customer_id, ))
+        
         orders = self.cursor.fetchall()
-        return orders
+        order_list = []
+        for order in orders:
+            order_list.append(CustomerOrders.from_db_tuple(order))
+
+        return order_list
 
 
     
