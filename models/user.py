@@ -7,3 +7,4 @@ class User:
 
     def role(self) -> str:
         return "user"
+

@@ -9,6 +9,8 @@ from models.admin import Admin
 from order_item import OrderItem
 from order import Order
 from product import Product
+from decimal import Decimal, InvalidOperation
+from notFoundError import NotFoundError
 
 if __name__ == "__main__":
     with psycopg.connect(
@@ -23,7 +25,7 @@ if __name__ == "__main__":
             print("Connected!")
 
             with connection.cursor() as cursor:
-                
+                print(connection.info.transaction_status)
                 customer_repository_object = customer_repository.CustomerRepository(cursor)
                 product_repository_object = product_repository.ProductRepository(cursor)
                 order_repository_object = order_repository.OrderRepository(cursor)
@@ -39,7 +41,12 @@ if __name__ == "__main__":
                             2. Get products
                             3. Get customers
                             4. Get all orders per product
-                            7. Exit
+                            7. Adding new product
+                            8. Updating product data
+                            9. Filtration of products by price
+                            10. Topping up the stock
+                            11. Deleting order_items from the order
+                            12. Exit
                         """)
                     else:
                             
@@ -47,6 +54,7 @@ if __name__ == "__main__":
                                     2. Get products
                                     5. Create order and add order item(s)
                                     6. Get my orders
+                                    11. Deleting order_items from the order
                                     7. Exit
                             """)
                         
@@ -108,13 +116,12 @@ if __name__ == "__main__":
                                     print(f"Order {order.order_id} has been created")
                                 
                                     while True:
-
                                         products = product_repository_object.get_products()
                                         for product in products:
-                                            f"{product.product_id} | "
+                                            print(f"{product.product_id} | "
                                             f"{product.product_name} | "
                                             f"{product.price} | "
-                                            f"{product.stock}"
+                                            f"{product.stock}")
 
                                         try:
                                             product_id = int(input("Product id that must be added: "))
@@ -189,10 +196,184 @@ if __name__ == "__main__":
                                     
                             else:
                                 print ("Access Error")
-                            
+
                     elif message == "7":
+                         
+                         if custom_user is not None and custom_user.role == "admin":
+                            try:
+                                product_name = input("Please insert product name: ")
+                                product_price = Decimal(input("Please add product price: "))
+                                product_stock = int(input("Please add quantity of products at stock: "))
+
+                            except InvalidOperation:
+                                 print("Incorrect value. Price must be pricey")
+                                 continue
+                            
+                            except ValueError:
+                                print("Incorrect value. Stock must be a number")
+                                continue
+
+                            try:
+                                with connection.transaction():
+                                    new_product = Product(0, product_name, product_price, product_stock)                
+                                    added_product = product_repository_object.add_new_product(new_product)
+
+                            except ValueError as e:
+                                print(e)
+                                continue
+
+                            except psycopg.errors.CheckViolation:
+                                print("Value is not correct")
+                                continue
+
+                            else:
+                                 print(f"Product {added_product.product_name}, price: {added_product.price}, stock: {added_product.stock} added to the database.")
+                    
+                    elif message == "8":
+                         if custom_user is not None and custom_user.role == "admin":
+
+                            while True:
+                                all_products = product_repository_object.get_products()
+
+                                for product in all_products:
+                                    print(product)
+
+                                try:
+                                    product_id = int(input("Please choose product id: "))
+                                except ValueError:
+                                    print("Id must be a number")
+                                    continue
+
+                                else:
+                                    try:
+                                        info_to_change = input("Please choose what do you want to change (name, price or stock):").strip().lower()
+                                        new_value = input("Please inform the new name of the changed data: ")
+
+                                        if info_to_change == "price":
+                                            new_value = Decimal(new_value)
+                                        elif info_to_change == "stock":
+                                            new_value = int(new_value)
+
+                                        product_repository_object.update_product_information(product_id, info_to_change, new_value)
+                                        print(f"Product has been modified: {info_to_change}: {new_value} ")
+
+                                    except InvalidOperation as e:
+                                        print("Incorrect price. Please enter a number")
+
+                                    except ValueError as e:
+                                        print("Incorrect stock value.")
+
+                                    except NotFoundError as e:
+                                        print(e.message)
+
+                                    answer = input("Do you want to update another product? yes/no")
+
+                                    if answer != "yes":
+                                            break
+
+                    elif message == "9":
+                         
+                         if custom_user is not None:
+
+                            try:
+                                min_price = Decimal(input("Min price for filtration: "))
+                                max_price = Decimal(input("Max price for filtration: "))
+                                if min_price > max_price:
+                                    print("Minimum price cannot exceed maximum price.")
+                                    continue
+
+                            except InvalidOperation:
+                                print("Incorrect value. Please choose correct price")
+
+                            else:
+                                filtrated_products = product_repository_object.filter_by_price_and_stock(min_price, max_price)
+                                for product in filtrated_products:
+                                    print(f"""Product: {product.product_name},
+                                    price: {product.price},
+                                    stock: {product.stock}
+                                    """)
+
+                    elif message == "10":
+                         if custom_user is not None and custom_user.role == "admin":
+
+                            while True:
+                                products = product_repository_object.get_products()
+                                for product in products:
+                                    print(f"{product.product_id} | "
+                                    f"{product.product_name} | "
+                                    f"{product.price} | "
+                                    f"{product.stock}")
+
+                                try:
+                                    product_id = int(input("Please choose product which needs to be replenished"))
+                                except ValueError:
+                                    print("Incorrect format")
+                                    continue
+
+                                try:
+                                    extra_stock = int(input("PLease inform how many items will be added to the database"))
+                                    if extra_stock <= 0:
+                                        raise ValueError("Please top up valid number")
+                                except ValueError as e:
+                                    print(e)
+                                    continue
+
+                                try:
+                                    product_repository_object.update_stock(product_id, extra_stock)
+
+                                except NotFoundError as e:
+                                    print(e)
+
+                                except ValueError as e:
+                                    print(e)
+
+                                except psycopg.errors.CheckViolation as e:
+                                    print(f"Database constraint error: {e}")
+
+                                except psycopg.Error as e:
+                                     print(f"Database error: {e}")
+
+                                else:
+                                     print("Stock has been updated successfully")
+
+                    elif message == "11":
+
+                        if custom_user is not None:
+                            while True:
+
+                                orders = customer_repository_object.get_my_orders(custom_user.user_id)
+                                for order in orders:
+                                    print(f"Order id: {order.id}, total_sum: {order.total_sum}")
+
+                                try:
+                                    order_id = int(input("Please choose the order: "))
+                                except ValueError:
+                                    print("Order is must be integer")
+                                    continue
+
+                                try:
+                                    with connection.transaction():
+                                        order_repository_object.deleting_order_item_from_order(order_id, custom_user.user_id)
+                                except NotFoundError as e:
+                                    print(e)
+
+                                except psycopg.errors.CheckViolation as e:
+                                    print(f"DB constraint error: {e}")
+
+                                except psycopg.Error as e:
+                                    print(f"Database error: {e}")
+
+                                else:
+                                    print("Order has been removed successfully.")
+
+                                    answer = input("Do you want to delete another order? yes/no ")
+                                    
+                                    if answer != "yes":
+                                        break
+
+
+                         
+                    elif message == "12":
                             break
 
-                        #     order_items = get_order_items(cursor, order_id)
-                        #     for item in order_items:
-                        #         print(f"order_id: {item[0]}, product_name: {item[1]}, price: {item[2]}, quantity: {item[3]}, item_total: {item[4]}")
+                

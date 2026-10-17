@@ -1,4 +1,5 @@
 from product import Product
+from notFoundError import NotFoundError
 
 class ProductRepository:
     
@@ -47,7 +48,79 @@ class ProductRepository:
     
             all_product_orders = self.cursor.fetchall()
             return all_product_orders
- 
+
+    def add_new_product(self, product):
+
+        self.cursor.execute("""
+                        INSERT INTO products (name, price, stock)
+                        VALUES (%s, %s, %s)
+                        RETURNING id, name, price, stock;
+        """, (product.product_name, product.price, product.stock))
+
+        new_product = self.cursor.fetchone()
+        return Product.from_db_tuple(new_product)
 
 
-         
+    def update_product_information(self, product_id, info_to_change, new_value):
+
+        allowed_fields = {
+        "name": "name",
+        "price": "price",
+        "stock": "stock"
+        }
+
+        if info_to_change not in allowed_fields:
+            raise KeyError("Invalid product field")
+        
+        column = allowed_fields[info_to_change]
+
+
+        self.cursor.execute(f"""
+                            UPDATE products SET {column} = %s
+                            WHERE id = %s RETURNING id;
+        """, (new_value, product_id))
+        
+
+        updated_product_id = self.cursor.fetchone()
+
+        if updated_product_id is None:
+            raise NotFoundError(f"Product with {product_id} is not found")
+
+
+    def search_product_by_name(self, product_name):
+        self.cursor.execute("""SELECT id, name, price, stock
+                            FROM products
+                            WHERE name = %s;
+        """, (product_name, ))
+
+        found_product = self.cursor.fetchone()
+        return Product.from_db_tuple(found_product)
+
+
+    def filter_by_price_and_stock(self, min_price, max_price):
+
+        self.cursor.execute("""SELECT id, name, price, stock
+                            FROM products
+                            WHERE stock > 0
+                            AND price >= %s AND price <= %s
+                            """, (min_price,  max_price))
+        
+        filtered_products = [Product.from_db_tuple(product) for product in self.cursor.fetchall()]
+        
+        return filtered_products
+
+    def update_stock(self, product_id, new_stock):
+        
+        self.cursor.execute("""UPDATE products SET stock = %s
+                            WHERE id = %s
+                            RETURNING id;
+        """, (new_stock, product_id))
+
+        updated_product_id = self.cursor.fetchone()
+        if updated_product_id is None:
+            raise NotFoundError("Product not found")
+
+    
+
+        
+        

@@ -1,5 +1,7 @@
 from order import Order
 from order_item import OrderItem
+from notFoundError import NotFoundError
+
 class OrderRepository:
     def __init__(self, cursor):
         self.cursor = cursor
@@ -32,17 +34,37 @@ class OrderRepository:
         
         if quantity > product.stock:    
             raise ValueError("Not enough product at stock")
-        
-        self.cursor.execute("""
-                            INSERT INTO order_items (order_id, product_id, quantity)
-                            VALUES (%s, %s, %s);
-                            """, (order.order_id, product.product_id, quantity))
 
-        # перенсти в продакт репозиторий
-        self.cursor.execute("""UPDATE products 
-                        SET stock = stock - %s
-                        WHERE id = %s;
-                        """, (quantity, product.product_id))
+        self.cursor.execute("SAVEPOINT add_order_item_sp")
+
+        try:
+            self.cursor.execute("""
+                                INSERT INTO order_items (order_id, product_id, quantity)
+                                VALUES (%s, %s, %s);
+                                """, (order.order_id, product.product_id, quantity))
+            
+            self.cursor.execute("""UPDATE products 
+                            SET stock = stock - %s
+                            WHERE id = %s AND %s <= stock
+                            RETURNING id;
+                            """, (quantity, product.product_id, quantity))
+            
+            updated_product = self.cursor.fetchone()
+            if updated_product is None:
+                raise ValueError("Not enough product at stock")
+
+            # order_item = OrderItem(product, quantity)
+            # order.add_order_item(order_item)
+
+            # освобождаем savepoint, если все прошло успешно
+            self.cursor.execute("RELEASE SAVEPOINT add_order_item_sp")
+            
+        except Exception:
+            # откатить изменения до savepoint, если возникла ошибка
+            self.cursor.execute("ROLLBACK TO SAVEPOINT add_order_item_sp")
+            # освобождаем savepoint после отката
+            self.cursor.execute("RELEASE SAVEPOINT add_order_item_sp")
+            raise
 
 
  # более длинный способ:
@@ -86,6 +108,51 @@ class OrderRepository:
 
         return order_info
 
+    def deleting_order_item_from_order(self, order_id, customer_id):
+
+        # проверка наличия заказа
+        self.cursor.execute("""SELECT id FROM orders_new
+        WHERE id = %s AND customer_id = %s;
+        """, (order_id, customer_id))
+
+        if self.cursor.fetchone() is None:
+            raise NotFoundError("Order not found")
+
+        self.cursor.execute("""SELECT product_id, quantity
+                            FROM order_items
+                            WHERE order_id  = %s;
+                            """, (order_id, ))
+
+        order_items = self.cursor.fetchall()
+        
+        if not order_items:
+            print("The order has no items")
+        else:
+            for order_item in order_items:
+                product_id = order_item[0]
+                quantity = order_item[1]
+            
+                self.cursor.execute("""UPDATE products
+                        SET stock = stock + %s
+                        WHERE id = %s;
+                        """, (quantity, product_id))
+
+        self.cursor.execute("""DELETE FROM orders_new
+                            WHERE orders_new.id = %s
+                            RETURNING id;
+                            """, (order_id, ))
+                    
+        removed_order = self.cursor.fetchone()
+                                        
+        if removed_order is None:
+            raise NotFoundError("Order not found")
+
+       
+            
+                
+        
+
+        
 
 
     # not necessary in this application:

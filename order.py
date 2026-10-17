@@ -8,3 +8,7 @@ class Order:
 
     def add_order_item(self, order_item):
         self.order_items.append(order_item)
+
+    def cancel_order_item(self, order_item):
+        self.order_items.remove(order_item)
+
