@@ -27,12 +27,12 @@ class CustomerRepository:
     
     def get_my_orders(self, customer_id):
         
-        self.cursor.execute("""SELECT orders_new.id, 
+        self.cursor.execute("""SELECT orders_new.id,
                                 SUM(products.price * order_items.quantity) AS total_sum
                             FROM orders_new
-                                JOIN customers ON orders_new.customer_id = customers.id
-                                JOIN order_items ON orders_new.id = order_items.order_id
-                                JOIN products ON products.id = order_items.product_id
+                                LEFT JOIN customers ON orders_new.customer_id = customers.id
+                                LEFT JOIN order_items ON orders_new.id = order_items.order_id
+                                LEFT JOIN products ON products.id = order_items.product_id
                             WHERE customers.id = %s
                             GROUP BY orders_new.id;
                             """, (customer_id, ))

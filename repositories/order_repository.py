@@ -109,7 +109,7 @@ class OrderRepository:
         return order_info
 
     def deleting_order_item_from_order(self, order_id, customer_id):
-
+        print("DEBUG: entered delete method")
         # проверка наличия заказа
         self.cursor.execute("""SELECT id FROM orders_new
         WHERE id = %s AND customer_id = %s;
@@ -118,12 +118,15 @@ class OrderRepository:
         if self.cursor.fetchone() is None:
             raise NotFoundError("Order not found")
 
+        print("DEBUG: order ownership verified")
+
         self.cursor.execute("""SELECT product_id, quantity
                             FROM order_items
                             WHERE order_id  = %s;
                             """, (order_id, ))
 
         order_items = self.cursor.fetchall()
+        print("DEBUG: order items:", order_items)
         
         if not order_items:
             print("The order has no items")
@@ -134,8 +137,11 @@ class OrderRepository:
             
                 self.cursor.execute("""UPDATE products
                         SET stock = stock + %s
-                        WHERE id = %s;
+                        WHERE id = %s
+                        RETURNING id, stock;
                         """, (quantity, product_id))
+
+                print(self.cursor.fetchone())
 
         self.cursor.execute("""DELETE FROM orders_new
                             WHERE orders_new.id = %s

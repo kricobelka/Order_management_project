@@ -25,6 +25,15 @@ if __name__ == "__main__":
             print("Connected!")
 
             with connection.cursor() as cursor:
+                
+                cursor.execute("""
+                        SELECT current_database(),
+                            current_user,
+                            inet_server_addr(),
+                            inet_server_port();
+                    """)
+                print(cursor.fetchone())
+
                 print(connection.info.transaction_status)
                 customer_repository_object = customer_repository.CustomerRepository(cursor)
                 product_repository_object = product_repository.ProductRepository(cursor)
@@ -77,16 +86,16 @@ if __name__ == "__main__":
                                 
                             
                     elif message == "2":
-                            if custom_user is None:
-                                print("Please login first")
-                                continue
+                        if custom_user is None:
+                            print("Please login first")
+                            continue
                             
-                            products = product_repository_object.get_products()
-                            for product in products:
+                        products = product_repository_object.get_products()
+                        for product in products:
                                 # f"{product.product_id} | "
-                                f"{product.product_name} | "
+                                print(f"{product.product_name} | "
                                 f"{product.price} | "
-                                f"{product.stock}"
+                                f"{product.stock}")
                                 # если айди не нужно показывать клиенту, мы его можем не печатть(убратб из принта)
                             
                     elif message == "3":
@@ -97,7 +106,6 @@ if __name__ == "__main__":
                             else:
                                 print("Access denied.")
                         
-
                     elif message == "4":
                             if custom_user is not None and custom_user.role() == "admin":
                                 all_product_orders = product_repository_object.get_all_product_orders()
@@ -346,7 +354,10 @@ if __name__ == "__main__":
                                     print(f"Order id: {order.id}, total_sum: {order.total_sum}")
 
                                 try:
-                                    order_id = int(input("Please choose the order: "))
+                                    order_id = int(input("Please choose the order: \n If you need to quit, press '0' "))
+                                    if order_id == "quit":
+                                        break
+
                                 except ValueError:
                                     print("Order is must be integer")
                                     continue
