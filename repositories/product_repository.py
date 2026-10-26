@@ -74,6 +74,11 @@ class ProductRepository:
         
         column = allowed_fields[info_to_change]
 
+        if info_to_change == "price" and new_value < 0:
+            raise ValueError("Price cannot be negative")
+        
+        if info_to_change == "stock" and new_value < 0:
+            raise ValueError("Stock cannot be negative")
 
         self.cursor.execute(f"""
                             UPDATE products SET {column} = %s
@@ -88,12 +93,20 @@ class ProductRepository:
 
 
     def search_product_by_name(self, product_name):
+
+        if not isinstance(product_name, str):
+            raise ValueError("Product name must be a string")
+                
         self.cursor.execute("""SELECT id, name, price, stock
                             FROM products
                             WHERE name = %s;
         """, (product_name, ))
-
+        
         found_product = self.cursor.fetchone()
+
+        if found_product is None:
+            raise NotFoundError(f"Product with name {product_name} hasn't been found")
+
         return Product.from_db_tuple(found_product)
 
 

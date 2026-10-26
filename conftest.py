@@ -31,6 +31,15 @@ def db_connection():
         
         # 1. Читаем ваш файл со всеми ограничениями и создаем таблицы в тест-БД
         with connection.cursor() as cursor:
+            cursor.execute("""
+                        DROP TABLE IF EXISTS
+                            order_items,
+                            orders_new,
+                            products,
+                            customers
+                        CASCADE;
+                    """)
+            
             with open("database_schema.sql", "r", encoding="utf-8") as f:
                 file_content = f.read()
             

@@ -55,7 +55,8 @@ if __name__ == "__main__":
                             9. Filtration of products by price
                             10. Topping up the stock
                             11. Deleting order_items from the order
-                            12. Exit
+                            12. Search product by name
+                            13. Exit
                         """)
                     else:
                             
@@ -64,7 +65,8 @@ if __name__ == "__main__":
                                     5. Create order and add order item(s)
                                     6. Get my orders
                                     11. Deleting order_items from the order
-                                    7. Exit
+                                    12. Search product by name
+                                    13. Exit
                             """)
                         
                     message = input("Choose option: ")
@@ -382,9 +384,43 @@ if __name__ == "__main__":
                                     if answer != "yes":
                                         break
 
-
-                         
                     elif message == "12":
+                        if custom_user is not None:
+
+                             while True:
+                                products = product_repository_object.get_products()
+
+                                for product in products:
+                                    print(f"{product.product_id} | "
+                                    f"{product.product_name} | "
+                                    f"{product.price} | "
+                                    f"{product.stock}")
+
+                                name = input("Required product name:")
+
+                                try:
+                                    found_product = product_repository_object.search_product_by_name(name)
+                                    
+                                    print(
+                                        f"{found_product.product_id} | "
+                                    f"{found_product.product_name} | "
+                                    f"{found_product.price} | "
+                                    f"{found_product.stock}"
+                                )
+                                    
+                                except ValueError as e:
+                                    print(e)
+                                    continue
+                                except NotFoundError as e:
+                                    print(e)
+                                    continue
+
+                                answer = input("Do you want to look for another product? yes/no ").strip().lower()
+                                                                    
+                                if answer != "yes":
+                                    break
+                         
+                    elif message == "13":
                             break
 
                 
